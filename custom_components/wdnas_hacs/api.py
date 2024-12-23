@@ -1,5 +1,6 @@
 """Sample API Client."""
-
+from wdnas_client import client
+from wdnas_client.exceptions import InvalidLoginError, RequestFailedError
 from __future__ import annotations
 
 import socket
@@ -25,77 +26,60 @@ class IntegrationBlueprintApiClientAuthenticationError(
     """Exception to indicate an authentication error."""
 
 
-def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
-    """Verify that the response is valid."""
-    if response.status in (401, 403):
-        msg = "Invalid credentials"
-        raise IntegrationBlueprintApiClientAuthenticationError(
-            msg,
-        )
-    response.raise_for_status()
-
-
 class IntegrationBlueprintApiClient:
-    """Sample API Client."""
+    """API client for your service, using your PyPI module."""
 
-    def __init__(
-        self,
-        username: str,
-        password: str,
-        session: aiohttp.ClientSession,
-    ) -> None:
-        """Sample API Client."""
-        self._username = username
-        self._password = password
-        self._session = session
+    def __init__(self, hass, username, password, host):
+        self.hass = hass
+        self.username = username
+        self.password = password
+        self.host = host
+        self._client = None  # Initialize the client later, after successful login
 
-    async def async_get_data(self) -> Any:
-        """Get data from the API."""
-        return await self._api_wrapper(
-            method="get",
-            url="https://jsonplaceholder.typicode.com/posts/1",
-        )
+    async def async_initialize_client(self):
+        """Initializes the client and logs in."""
+        if self._client is None:
+            # Create a new client instance and login
+            self._client = client(self.username, self.password, self.host)
+            await self.hass.async_add_executor_job(self._client.login)
 
-    async def async_set_title(self, value: str) -> Any:
-        """Get data from the API."""
-        return await self._api_wrapper(
-            method="patch",
-            url="https://jsonplaceholder.typicode.com/posts/1",
-            data={"title": value},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
-
-    async def _api_wrapper(
-        self,
-        method: str,
-        url: str,
-        data: dict | None = None,
-        headers: dict | None = None,
-    ) -> Any:
-        """Get information from the API."""
+    async def async_get_session_token(self) -> str | None:
+        """Attempts to get a session token, adapting to your module's structure."""
+        await self.async_initialize_client()  # Ensure client is initialized
         try:
-            async with async_timeout.timeout(10):
-                response = await self._session.request(
-                    method=method,
-                    url=url,
-                    headers=headers,
-                    json=data,
-                )
-                _verify_response_or_raise(response)
-                return await response.json()
+            # Check if PHPSSESID is available and return it as a form of session token
+            session_token = self._client.session.cookies.get("PHPSESSID")
+            if session_token:
+                return session_token
+            else:
+                return None  # No session token found
+        except (InvalidLoginError, RequestFailedError) as e:
+            # Handle exceptions raised by your module
+            if isinstance(e, InvalidLoginError):
+                raise IntegrationBlueprintApiClientAuthenticationError(
+                    "Authentication failed"
+                ) from e
+            else:
+                raise IntegrationBlueprintApiClientCommunicationError(
+                    f"Error communicating with API: {e}"
+                ) from e
 
-        except TimeoutError as exception:
-            msg = f"Timeout error fetching information - {exception}"
-            raise IntegrationBlueprintApiClientCommunicationError(
-                msg,
-            ) from exception
-        except (aiohttp.ClientError, socket.gaierror) as exception:
-            msg = f"Error fetching information - {exception}"
-            raise IntegrationBlueprintApiClientCommunicationError(
-                msg,
-            ) from exception
-        except Exception as exception:  # pylint: disable=broad-except
-            msg = f"Something really wrong happened! - {exception}"
-            raise IntegrationBlueprintApiClientError(
-                msg,
-            ) from exception
+    async def async_get_data(self):
+        """Example of making an authenticated API request."""
+        await self.async_initialize_client()  # Ensure client is initialized
+        try:
+            # Adapt this to how you fetch data with your module's client
+            data = await self.hass.async_add_executor_job(
+                self._client.get_some_data
+            )
+            return data
+        except (InvalidLoginError, RequestFailedError) as e:
+            # Handle exceptions from your module
+            if isinstance(e, InvalidLoginError):
+                raise IntegrationBlueprintApiClientAuthenticationError(
+                    "Authentication failed"
+                ) from e
+            else:
+                raise IntegrationBlueprintApiClientCommunicationError(
+                    f"Error communicating with API: {e}"
+                ) from e

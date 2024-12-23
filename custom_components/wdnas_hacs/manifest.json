@@ -1,7 +1,7 @@
 {
   "domain": "wdnas_hacs",
   "name": "WD Nas",
-  "requirements": ["wdnas-client>=0.6.0"],
+  "requirements": ["wdnas-client>=0.7.0"],
   "codeowners": [
     "@J-shw"
   ],
