@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import voluptuous as vol
 from homeassistant import config_entries, data_entry_flow
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_HOST
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
@@ -30,9 +30,10 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         _errors = {}
         if user_input is not None:
             try:
-                await self._test_credentials(
+                session_token = await self._test_credentials(
                     username=user_input[CONF_USERNAME],
                     password=user_input[CONF_PASSWORD],
+                    host=user_input[CONF_HOST],
                 )
             except IntegrationBlueprintApiClientAuthenticationError as exception:
                 LOGGER.warning(exception)
@@ -44,9 +45,17 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 LOGGER.exception(exception)
                 _errors["base"] = "unknown"
             else:
+                data = {
+                    CONF_USERNAME: user_input[CONF_USERNAME],
+                    CONF_PASSWORD: user_input[CONF_PASSWORD],
+                    CONF_HOST: user_input[CONF_HOST],
+                }
+                if session_token:
+                    data["session_token"] = session_token
+
                 return self.async_create_entry(
                     title=user_input[CONF_USERNAME],
-                    data=user_input,
+                    data=data,
                 )
 
         return self.async_show_form(
@@ -66,16 +75,28 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                             type=selector.TextSelectorType.PASSWORD,
                         ),
                     ),
+                    vol.Required(
+                        CONF_HOST,
+                        default=(user_input or {}).get(CONF_HOST, vol.UNDEFINED),
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.TEXT,
+                        ),
+                    ),
                 },
             ),
             errors=_errors,
         )
 
-    async def _test_credentials(self, username: str, password: str) -> None:
-        """Validate credentials."""
+    async def _test_credentials(self, username: str, password: str, host: str) -> str | None:
+        """Validate credentials and get session token if possible."""
         client = IntegrationBlueprintApiClient(
             username=username,
             password=password,
-            session=async_create_clientsession(self.hass),
+            hass=self.hass,
+            host=host
         )
-        await client.async_get_data()
+        # Request a session token. This will also ensure the client is initialized
+        session_token = await client.async_get_session_token()
+
+        return session_token
