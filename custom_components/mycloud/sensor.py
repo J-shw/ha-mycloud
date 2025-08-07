@@ -6,7 +6,10 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from wdnas_client import client
+from wdnas_client import client as nas_client
+
+from .const import DOMAIN
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     username = config_entry.data["Username"]
     password = config_entry.data["Password"]
 
-    client = client(username, password, host)
+    client = nas_client(username, password, host)
     
     await client.__aenter__()
 
@@ -59,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
         name=device_info_data["name"],
         manufacturer="Western Digital",
         model=device_info_data["description"],
-        sw_version=coordinator.system_version_data["firmware"]
+        sw_version=system_version_data["firmware"]
     )
 
     sensors_to_add = [
@@ -99,7 +102,7 @@ class MyCloudSensor(CoordinatorEntity, SensorEntity):
     @property
     def unique_id(self):
         """Return a unique ID for the sensor."""
-        return f"{self._device_info['identifiers'][0][1]}_{self._sensor_type}"
+        return f"{next(iter(self._device_info['identifiers']))[1]}_{self._sensor_type}"
 
     @property
     def device_info(self):
