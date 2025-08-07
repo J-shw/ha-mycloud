@@ -1,6 +1,8 @@
 # <img src="images/logo_WDMyCloud_2_1.png" alt="WD My Cloud App Icon" width="100"> ha-mycloud
 
-A Home Assistant integration for Western Digital My Cloud NAS devices.
+Home Assistant integration for Western Digital My Cloud NAS devices.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=J-shw&repository=ha-mycloud&category=Integration)
 
 ---
 
@@ -36,3 +38,21 @@ A Home Assistant integration for Western Digital My Cloud NAS devices.
 The integration provides the following sensors:
 - **WD My Cloud CPU Usage** (`sensor.wd_my_cloud_cpu_usage`)
 - **WD My Cloud Memory Usage** (`sensor.wd_my_cloud_memory_usage`)
+- **WD My Cloud Total Storage** (`sensor.wd_my_cloud_total_storage`)
+- **WD My Cloud Used Storage** (`sensor.wd_my_cloud_used_storage`)
+- **WD My Cloud Unused Storage** (`sensor.wd_my_cloud_unused_storage`)
+- **[disk_name] Temperature** (`sensor.wd_my_cloud_disk_sda_temperature`) - a separate sensor is created for each disk
+- **[disk_name] Size** (`sensor.wd_my_cloud_disk_sda_size`) - a separate sensor is created for each disk
+- **[volume_name] Size** (`sensor.wd_my_cloud_volume_volume_1_size`) - a separate sensor is created for each volume
+
+***
+
+### Binary Sensors
+The integration provides the following binary sensors:
+- **[disk_name] Healthy** (`binary_sensor.wd_my_cloud_disk_sda_healthy`) - a separate binary sensor is created for each disk
+- **[disk_name] Sleeping** (`binary_sensor.wd_my_cloud_disk_sda_sleeping`) - a separate binary sensor is created for each disk
+- **[disk_name] Failed** (`binary_sensor.wd_my_cloud_disk_sda_failed`) - a separate binary sensor is created for each disk
+- **[disk_name] Over Temperature** (`binary_sensor.wd_my_cloud_disk_sda_over_temperature`) - a separate binary sensor is created for each disk
+- **[volume_name] Mounted** (`binary_sensor.wd_my_cloud_volume_volume_1_mounted`) - a separate binary sensor is created for each volume
+- **[volume_name] Unlocked** (`binary_sensor.wd_my_cloud_volume_volume_1_unlocked`) - a separate binary sensor is created for each volume
+- **[volume_name] Encrypted** (`binary_sensor.wd_my_cloud_volume_volume_1_encrypted`) - a separate binary sensor is created for each volume
