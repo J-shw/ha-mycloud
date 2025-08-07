@@ -105,6 +105,7 @@ class MyCloudCPUSensor(MyCloudSensorBase):
             "CPU Usage",
             unit="%"
         )
+        self._attr_icon = "mdi:cpu-64-bit"
 
     @property
     def state(self):
@@ -121,6 +122,7 @@ class MyCloudMemorySensor(MyCloudSensorBase):
             "Memory Usage",
             unit="%"
         )
+        self._attr_icon = "mdi:memory"
 
     @property
     def state(self):
