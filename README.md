@@ -9,8 +9,9 @@ Home Assistant integration for Western Digital My Cloud NAS devices.
 ### Features
 - **System Status**: Monitor CPU and memory usage of your My Cloud device.
 - **Device Information**: See key details like serial number, name, and firmware version.
-- **Network & Storage**: Track network info, alerts, and shared folder names.
-- **Account Management**: View user accounts and groups.
+- **Disk Information**: See key details about disks, including their health status.
+- **Volume Information**: View all volumes size, encryption status and more.
+
 
 ---
 
