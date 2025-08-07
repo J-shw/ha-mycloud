@@ -66,11 +66,11 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     )
 
     sensors_to_add = [
-        MyCloudSensor(coordinator, device, "cpu_usage", "CPU Usage"),
-        MyCloudSensor(coordinator, device, "memory_usage", "Memory Usage")
+        MyCloudCPUSensor(coordinator, device),
+        MyCloudMemorySensor(coordinator, device)
     ]
 
-    async_add_entities(sensors_to_add)
+    async_add_entities(sensors_to_add, True)
 
     hass.data[DOMAIN]["client_cleanup"] = client.__aexit__
 
@@ -82,63 +82,45 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         await client_cleanup(None, None, None)
     return True
 
-class MyCloudSensor(CoordinatorEntity, SensorEntity):
-    """Representation of a WD My Cloud sensor."""
-    
-    def __init__(self, coordinator, device_info, sensor_type, name):
-        """Initialize the sensor."""
+class MyCloudSensorBase(CoordinatorEntity, SensorEntity):
+    def __init__(self, coordinator, device_info, key, name, unit=None, device_class=None):
         super().__init__(coordinator)
-        self._device_info = device_info
-        self._sensor_type = sensor_type
-        self._name = f"{device_info['name']} - {name}"
-        self._state = None
-        self._unit_of_measurement = None
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{next(iter(device_info.identifiers))[1]}_{key}"
+        self._attr_name = name
+        self._attr_unit_of_measurement = unit
+        self._attr_device_class = device_class
+        self._attr_state_class = SensorStateClass.MEASUREMENT
 
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        return self._name
-
-    @property
-    def unique_id(self):
-        """Return a unique ID for the sensor."""
-        return f"{next(iter(self._device_info['identifiers']))[1]}_{self._sensor_type}"
-
-    @property
-    def device_info(self):
-        """Return the device info."""
-        return self._device_info
+class MyCloudCPUSensor(MyCloudSensorBase):
+    def __init__(self, coordinator, device_info):
+        super().__init__(
+            coordinator,
+            device_info,
+            "cpu_usage",
+            f"{device_info.name} - CPU Usage",
+            unit="%"
+        )
 
     @property
     def state(self):
-        """Return the state of the sensor."""
-        return self._state
+        return self.coordinator.data["system_status"]["cpu"]
+
+class MyCloudMemorySensor(MyCloudSensorBase):
+    def __init__(self, coordinator, device_info):
+        super().__init__(
+            coordinator,
+            device_info,
+            "memory_usage",
+            f"{device_info.name} - Memory Usage",
+            unit="%"
+        )
 
     @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return self._unit_of_measurement
-
-    @property
-    def state_class(self):
-        """Return the state class."""
-        return SensorStateClass.MEASUREMENT
-        
-    def _handle_coordinator_update(self):
-        """Handle updated data from the coordinator."""
-        if self._sensor_type == "cpu_usage":
-            cpu_data = self.coordinator.data["system_status"]["cpu"]
-            self._state = cpu_data
-            self._unit_of_measurement = "%"
-            
-        elif self._sensor_type == "memory_usage":
-            mem_data = self.coordinator.data["system_status"]["memory"]
-            total = mem_data["total"]
-            used = total - mem_data["unused"]
-            if total > 0:
-                self._state = round((used / total) * 100, 2)
-            else:
-                self._state = None
-            self._unit_of_measurement = "%"
-        
-        self.async_write_ha_state()
+    def state(self):
+        mem_data = self.coordinator.data["system_status"]["memory"]
+        total = mem_data["total"]
+        used = total - mem_data["unused"]
+        if total > 0:
+            return round((used / total) * 100, 2)
+        return None
