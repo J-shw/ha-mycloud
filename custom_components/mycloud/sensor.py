@@ -94,7 +94,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
             MyCloudDiskHealthySensor(coordinator, disk_device, disk_serial, disk_name, disk),
             MyCloudDiskSleepSensor(coordinator, disk_device, disk_serial, disk_name, disk),
             MyCloudDiskFailedSensor(coordinator, disk_device, disk_serial, disk_name, disk),
-            MyCloudDiskoverTempSensor(coordinator, disk_device, disk_serial, disk_name, disk)
+            MyCloudDiskOverTempSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskSizeSensor(coordinator, disk_device, disk_serial, disk_name, disk)
         ])
 
     async_add_entities(sensors_to_add, True)
@@ -178,6 +179,28 @@ class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
             if disk["name"] == self._disk_name:
                 return disk["temp"]
         return None
+
+class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE 
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:harddisk"
+
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_size"
+        self._attr_name = f"{disk_name} Size"
+        self._disk_name = disk['name']
+
+    @property
+    def state(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                size_bytes = disk["size"]
+                size_tb = size_bytes / (1024**4)
+                return round(size_tb, 2)
+        return None
     
 class MyCloudDiskHealthySensor(CoordinatorEntity, BinarySensorEntity):
     _attr_icon = "mdi:shield-check"
@@ -230,7 +253,7 @@ class MyCloudDiskFailedSensor(CoordinatorEntity, BinarySensorEntity):
                 return disk["failed"]
         return False
 
-class MyCloudDiskoverTempSensor(CoordinatorEntity, BinarySensorEntity):
+class MyCloudDiskOverTempSensor(CoordinatorEntity, BinarySensorEntity):
     _attr_icon = "mdi:thermometer-alert"
     def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
         super().__init__(coordinator)
