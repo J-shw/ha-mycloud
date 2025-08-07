@@ -89,7 +89,7 @@ class MyCloudSensorBase(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._attr_device_info = device_info
         self._attr_unique_id = f"{serial_number}_{key}"
-        self._attr_name = f"{device_name} - {name}"
+        self._attr_name = f"{device_name} {name}"
         self._attr_unit_of_measurement = unit
         self._attr_device_class = device_class
         self._attr_state_class = SensorStateClass.MEASUREMENT
