@@ -23,7 +23,7 @@ Home Assistant integration for Western Digital My Cloud NAS devices.
 3. Restart Home Assistant.
 
 #### Manual
-1. Copy the `custom_components/ha-mycloud` folder into your Home Assistant `custom_components` directory.
+1. Copy the `custom_components/mycloud` folder into your Home Assistant `custom_components` directory.
 2. Restart Home Assistant.
 
 ---
