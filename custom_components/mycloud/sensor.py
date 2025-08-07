@@ -32,14 +32,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
         try:
             data = {
                 "system_info": await client.system_info(),
-                "share_names": await client.share_names(),
                 "system_status": await client.system_status(),
-                "network_info": await client.network_info(),
                 "device_info": await client.device_info(),
                 "system_version": await client.system_version(),
-                "latest_version": await client.latest_version(),
-                "accounts": await client.accounts(),
-                "alerts": await client.alerts(),
             }
             return data
         except Exception as err:
