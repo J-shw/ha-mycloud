@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed, CoordinatorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -173,11 +174,9 @@ class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
             if disk["name"] == self._disk_name:
                 return disk["temp"]
         return None
-
-class MyCloudDiskHealthySensor(CoordinatorEntity, SensorEntity):
+    
+class MyCloudDiskHealthySensor(CoordinatorEntity, BinarySensorEntity):
     _attr_icon = "mdi:shield-check"
-    _attr_device_class = "disk_health"
-
     def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
         super().__init__(coordinator)
         self._attr_device_info = device_info
@@ -186,9 +185,9 @@ class MyCloudDiskHealthySensor(CoordinatorEntity, SensorEntity):
         self._disk_name = disk['name']
 
     @property
-    def state(self):
+    def is_on(self):
         disks = self.coordinator.data["system_info"]["disks"]
         for disk in disks:
             if disk["name"] == self._disk_name:
-                return "Healthy" if disk["healthy"] else "Unhealthy"
-        return "Unknown"
+                return disk["healthy"]
+        return False
