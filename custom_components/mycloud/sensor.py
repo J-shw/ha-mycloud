@@ -85,6 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
             manufacturer="Western Digital",
             model=disk_model,
             sw_version=system_version_data["firmware"],
+            hw_version=disk["rev"],
             via_device=(DOMAIN, serial_number)
         )
 
