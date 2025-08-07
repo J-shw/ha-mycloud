@@ -90,7 +90,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
 
         sensors_to_add.extend([
             MyCloudDiskTempSensor(coordinator, disk_device, disk_serial, disk_name, disk),
-            MyCloudDiskHealthySensor(coordinator, disk_device, disk_serial, disk_name, disk)
+            MyCloudDiskHealthySensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskSleepSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskFailedSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskoverTempSensor(coordinator, disk_device, disk_serial, disk_name, disk)
         ])
 
     async_add_entities(sensors_to_add, True)
@@ -190,4 +193,55 @@ class MyCloudDiskHealthySensor(CoordinatorEntity, BinarySensorEntity):
         for disk in disks:
             if disk["name"] == self._disk_name:
                 return disk["healthy"]
+        return False
+
+class MyCloudDiskSleepSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:sleep"
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_sleep"
+        self._attr_name = f"{disk_name} Sleeping"
+        self._disk_name = disk['name']
+
+    @property
+    def is_on(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["sleep"]
+        return False
+
+class MyCloudDiskFailedSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:alert"
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_failed"
+        self._attr_name = f"{disk_name} Failed"
+        self._disk_name = disk['name']
+
+    @property
+    def is_on(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["failed"]
+        return False
+
+class MyCloudDiskoverTempSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:thermometer-alert"
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_over_temp"
+        self._attr_name = f"{disk_name} Over Temperature"
+        self._disk_name = disk['name']
+
+    @property
+    def is_on(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["over_temp"]
         return False
