@@ -72,6 +72,26 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
         MyCloudMemorySensor(coordinator, device, serial_number, device_name)
     ]
 
+    disks = coordinator.data["system_info"]["disks"]
+    for disk in disks:
+        disk_serial = disk["sn"]
+        disk_name = f"{device_name} Disk {disk['name']}"
+        disk_model = disk["model"]
+
+        disk_device = DeviceInfo(
+            identifiers={(DOMAIN, disk_serial)},
+            name=disk_name,
+            manufacturer="Western Digital",
+            model=disk_model,
+            sw_version=system_version_data["firmware"],
+            via_device=(DOMAIN, serial_number)
+        )
+
+        sensors_to_add.extend([
+            MyCloudDiskTempSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskHealthySensor(coordinator, disk_device, disk_serial, disk_name, disk)
+        ])
+
     async_add_entities(sensors_to_add, True)
 
     hass.data[DOMAIN]["client_cleanup"] = client.__aexit__
@@ -132,3 +152,43 @@ class MyCloudMemorySensor(MyCloudSensorBase):
         if total > 0:
             return round((used / total) * 100, 2)
         return None
+
+class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_unit_of_measurement = "°C"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:thermometer"
+
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_temp"
+        self._attr_name = f"{disk_name} Temperature"
+        self._disk_name = disk['name']
+
+    @property
+    def state(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["temp"]
+        return None
+
+class MyCloudDiskHealthySensor(CoordinatorEntity, SensorEntity):
+    _attr_icon = "mdi:shield-check"
+    _attr_device_class = "disk_health"
+
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_healthy"
+        self._attr_name = f"{disk_name} Healthy"
+        self._disk_name = disk['name']
+
+    @property
+    def state(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return "Healthy" if disk["healthy"] else "Unhealthy"
+        return "Unknown"
