@@ -101,6 +101,26 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
             MyCloudDiskOverTempSensor(coordinator, disk_device, disk_serial, disk_name, disk),
             MyCloudDiskSizeSensor(coordinator, disk_device, disk_serial, disk_name, disk)
         ])
+    
+    volumes = coordinator.data["system_info"]["volumes"]
+    for volume in volumes:
+        volume_id = volume["id"]
+        volume_name = f"{device_name} {volume['label']}"
+
+        volume_device = DeviceInfo(
+            identifiers={(DOMAIN, volume_id)},
+            name=volume_name,
+            manufacturer="Western Digital",
+            model="Storage Volume",
+            via_device=(DOMAIN, serial_number)
+        )
+
+        sensors_to_add.extend([
+            MyCloudVolumeSizeSensor(coordinator, volume_device, volume_name, volume),
+            MyCloudVolumeMountedSensor(coordinator, volume_device, volume_name, volume),
+            MyCloudVolumeUnlockedSensor(coordinator, volume_device, volume_name, volume),
+            MyCloudVolumeEncryptedSensor(coordinator, volume_device, volume_name, volume)
+        ])
 
     async_add_entities(sensors_to_add, True)
 
@@ -123,6 +143,8 @@ class MyCloudSensorBase(CoordinatorEntity, SensorEntity):
         self._attr_unit_of_measurement = unit
         self._attr_device_class = device_class
         self._attr_state_class = SensorStateClass.MEASUREMENT
+
+# -- System --
 
 class MyCloudCPUSensor(MyCloudSensorBase):
     def __init__(self, coordinator, device_info, serial_number, device_name):
@@ -216,7 +238,9 @@ class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
         size_data = self.coordinator.data["system_info"]["size"]
         unused_bytes = size_data["unused"]
         return round(unused_bytes / (1024**4), 2)
-    
+
+# -- Disks --
+
 class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -327,4 +351,83 @@ class MyCloudDiskOverTempSensor(CoordinatorEntity, BinarySensorEntity):
         for disk in disks:
             if disk["name"] == self._disk_name:
                 return disk["over_temp"]
+        return False
+
+# -- Volumes --
+
+class MyCloudVolumeSizeSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:harddisk"
+    _attr_unit_of_measurement = "TB"
+
+    def __init__(self, coordinator, device_info, volume_name, volume):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{volume_name}_volume_size"
+        self._attr_name = f"{volume_name} Size"
+        self._volume_name = volume['name']
+
+    @property
+    def state(self):
+        volumes = self.coordinator.data["system_info"]["volumes"]
+        for volume in volumes:
+            if volume["name"] == self._volume_name:
+                size_bytes = volume["size"]
+                size_tb = size_bytes / (1024**4)
+                return round(size_tb, 2)
+        return None
+
+class MyCloudVolumeMountedSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:folder-pound"
+
+    def __init__(self, coordinator, device_info, volume_name, volume):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{volume_name}_volume_mounted"
+        self._attr_name = f"{volume_name} Mounted"
+        self._volume_name = volume['name']
+
+    @property
+    def is_on(self):
+        volumes = self.coordinator.data["system_info"]["volumes"]
+        for volume in volumes:
+            if volume["name"] == self._volume_name:
+                return volume["mounted"]
+        return False
+
+class MyCloudVolumeUnlockedSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:lock-open"
+
+    def __init__(self, coordinator, device_info, volume_name, volume):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{volume_name}_volume_unlocked"
+        self._attr_name = f"{volume_name} Unlocked"
+        self._volume_name = volume['name']
+
+    @property
+    def is_on(self):
+        volumes = self.coordinator.data["system_info"]["volumes"]
+        for volume in volumes:
+            if volume["name"] == self._volume_name:
+                return volume["unlocked"]
+        return False
+        
+class MyCloudVolumeEncryptedSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:lock"
+
+    def __init__(self, coordinator, device_info, volume_name, volume):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{volume_name}_volume_encrypted"
+        self._attr_name = f"{volume_name} Encrypted"
+        self._volume_name = volume['name']
+
+    @property
+    def is_on(self):
+        volumes = self.coordinator.data["system_info"]["volumes"]
+        for volume in volumes:
+            if volume["name"] == self._volume_name:
+                return volume["encrypted"]
         return False
