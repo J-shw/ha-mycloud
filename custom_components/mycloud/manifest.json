@@ -1,11 +1,11 @@
 {
-  "domain": "wdnas",
-  "name": "WD Nas",
-  "requirements": ["wdnas-client>=0.7.0"],
+  "domain": "mycloud",
+  "name": "My Cloud",
   "codeowners": ["@J-shw"],
   "config_flow": true,
   "documentation": "https://github.com/J-shw/wdnas_hacs",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/J-shw/wdnas_hacs/issues",
+  "requirements": ["wdnas-client>=0.8.2"],
   "version": "0.0.0"
 }
