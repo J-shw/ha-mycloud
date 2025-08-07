@@ -4,6 +4,7 @@ from homeassistant.components.sensor import SensorEntity, SensorStateClass, Sens
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed, CoordinatorEntity
+from homeassistant.const import UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -161,7 +162,7 @@ class MyCloudMemorySensor(MyCloudSensorBase):
 
 class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_unit_of_measurement = "°C"
+    _attr_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:thermometer"
 
@@ -191,6 +192,7 @@ class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{serial_number}_disk_size"
         self._attr_name = f"{disk_name} Size"
         self._disk_name = disk['name']
+        self._attr_unit_of_measurement = "TB" # Not sure what Enum to use for this...
 
     @property
     def state(self):
