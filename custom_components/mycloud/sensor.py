@@ -1,8 +1,10 @@
 import logging
 from datetime import timedelta
 from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed, CoordinatorEntity
+from homeassistant.const import UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -69,8 +71,36 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
 
     sensors_to_add = [
         MyCloudCPUSensor(coordinator, device, serial_number, device_name),
-        MyCloudMemorySensor(coordinator, device, serial_number, device_name)
+        MyCloudMemorySensor(coordinator, device, serial_number, device_name),
+        MyCloudTotalStorageSensor(coordinator, device, serial_number, device_name),
+        MyCloudUsedStorageSensor(coordinator, device, serial_number, device_name),
+        MyCloudUnusedStorageSensor(coordinator, device, serial_number, device_name)
     ]
+
+    disks = coordinator.data["system_info"]["disks"]
+    for disk in disks:
+        disk_serial = disk["sn"]
+        disk_name = f"{device_name} Disk {disk['name']}"
+        disk_model = disk["model"]
+
+        disk_device = DeviceInfo(
+            identifiers={(DOMAIN, disk_serial)},
+            name=disk_name,
+            manufacturer="Western Digital",
+            model=disk_model,
+            sw_version=system_version_data["firmware"],
+            hw_version=disk["rev"],
+            via_device=(DOMAIN, serial_number)
+        )
+
+        sensors_to_add.extend([
+            MyCloudDiskTempSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskHealthySensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskSleepSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskFailedSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskOverTempSensor(coordinator, disk_device, disk_serial, disk_name, disk),
+            MyCloudDiskSizeSensor(coordinator, disk_device, disk_serial, disk_name, disk)
+        ])
 
     async_add_entities(sensors_to_add, True)
 
@@ -132,3 +162,169 @@ class MyCloudMemorySensor(MyCloudSensorBase):
         if total > 0:
             return round((used / total) * 100, 2)
         return None
+    
+class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:database"
+    _attr_unit_of_measurement = "TB"
+
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_total_storage"
+        self._attr_name = f"{device_name} Total Storage"
+
+    @property
+    def state(self):
+        size_data = self.coordinator.data["system_info"]["size"]
+        total_bytes = size_data["total"]
+        return round(total_bytes / (1024**4), 2)
+
+class MyCloudUsedStorageSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:database-minus"
+    _attr_unit_of_measurement = "TB"
+
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_used_storage"
+        self._attr_name = f"{device_name} Used Storage"
+
+    @property
+    def state(self):
+        size_data = self.coordinator.data["system_info"]["size"]
+        used_bytes = size_data["used"]
+        return round(used_bytes / (1024**4), 2)
+
+class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:database-plus"
+    _attr_unit_of_measurement = "TB"
+
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_unused_storage"
+        self._attr_name = f"{device_name} Unused Storage"
+
+    @property
+    def state(self):
+        size_data = self.coordinator.data["system_info"]["size"]
+        unused_bytes = size_data["unused"]
+        return round(unused_bytes / (1024**4), 2)
+    
+class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:thermometer"
+
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_temp"
+        self._attr_name = f"{disk_name} Temperature"
+        self._disk_name = disk['name']
+
+    @property
+    def state(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["temp"]
+        return None
+
+class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE 
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:harddisk"
+
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_size"
+        self._attr_name = f"{disk_name} Size"
+        self._disk_name = disk['name']
+        self._attr_unit_of_measurement = "TB" # Not sure what Enum to use for this...
+
+    @property
+    def state(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                size_bytes = disk["size"]
+                size_tb = size_bytes / (1024**4)
+                return round(size_tb, 2)
+        return None
+    
+class MyCloudDiskHealthySensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:shield-check"
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_healthy"
+        self._attr_name = f"{disk_name} Healthy"
+        self._disk_name = disk['name']
+
+    @property
+    def is_on(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["healthy"]
+        return False
+
+class MyCloudDiskSleepSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:sleep"
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_sleep"
+        self._attr_name = f"{disk_name} Sleeping"
+        self._disk_name = disk['name']
+
+    @property
+    def is_on(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["sleep"]
+        return False
+
+class MyCloudDiskFailedSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:alert"
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_failed"
+        self._attr_name = f"{disk_name} Failed"
+        self._disk_name = disk['name']
+
+    @property
+    def is_on(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["failed"]
+        return False
+
+class MyCloudDiskOverTempSensor(CoordinatorEntity, BinarySensorEntity):
+    _attr_icon = "mdi:thermometer-alert"
+    def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_disk_over_temp"
+        self._attr_name = f"{disk_name} Over Temperature"
+        self._disk_name = disk['name']
+
+    @property
+    def is_on(self):
+        disks = self.coordinator.data["system_info"]["disks"]
+        for disk in disks:
+            if disk["name"] == self._disk_name:
+                return disk["over_temp"]
+        return False
