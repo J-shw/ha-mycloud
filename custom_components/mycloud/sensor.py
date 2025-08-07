@@ -2,11 +2,11 @@ import logging
 from datetime import timedelta
 from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed, CoordinatorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from wdnas_client import AsyncClient
+from wdnas_client import client
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     username = config_entry.data["Username"]
     password = config_entry.data["Password"]
 
-    client = AsyncClient(username, password, host)
+    client = client(username, password, host)
     
     await client.__aenter__()
 
