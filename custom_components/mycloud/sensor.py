@@ -6,7 +6,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .wdnas_client import AsyncClient
+from wdnas_client import AsyncClient
 
 _LOGGER = logging.getLogger(__name__)
 
