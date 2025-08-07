@@ -56,18 +56,20 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
 
     device_info_data = coordinator.data["device_info"]
     system_version_data = coordinator.data["system_version"]
+    serial_number = device_info_data["serial_number"]
+    device_name = device_info_data["name"]
 
     device = DeviceInfo(
-        identifiers={(DOMAIN, device_info_data["serial_number"])},
-        name=device_info_data["name"],
+        identifiers={(DOMAIN, serial_number)},
+        name=device_name,
         manufacturer="Western Digital",
         model=device_info_data["description"],
         sw_version=system_version_data["firmware"]
     )
 
     sensors_to_add = [
-        MyCloudCPUSensor(coordinator, device),
-        MyCloudMemorySensor(coordinator, device)
+        MyCloudCPUSensor(coordinator, device, serial_number, device_name),
+        MyCloudMemorySensor(coordinator, device, serial_number, device_name)
     ]
 
     async_add_entities(sensors_to_add, True)
@@ -83,22 +85,24 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     return True
 
 class MyCloudSensorBase(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator, device_info, key, name, unit=None, device_class=None):
+    def __init__(self, coordinator, device_info, serial_number, device_name, key, name, unit=None, device_class=None):
         super().__init__(coordinator)
         self._attr_device_info = device_info
-        self._attr_unique_id = f"{next(iter(device_info.identifiers))[1]}_{key}"
-        self._attr_name = name
+        self._attr_unique_id = f"{serial_number}_{key}"
+        self._attr_name = f"{device_name} - {name}"
         self._attr_unit_of_measurement = unit
         self._attr_device_class = device_class
         self._attr_state_class = SensorStateClass.MEASUREMENT
 
 class MyCloudCPUSensor(MyCloudSensorBase):
-    def __init__(self, coordinator, device_info):
+    def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(
             coordinator,
             device_info,
+            serial_number,
+            device_name,
             "cpu_usage",
-            f"{device_info.name} - CPU Usage",
+            "CPU Usage",
             unit="%"
         )
 
@@ -107,12 +111,14 @@ class MyCloudCPUSensor(MyCloudSensorBase):
         return self.coordinator.data["system_status"]["cpu"]
 
 class MyCloudMemorySensor(MyCloudSensorBase):
-    def __init__(self, coordinator, device_info):
+    def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(
             coordinator,
             device_info,
+            serial_number,
+            device_name,
             "memory_usage",
-            f"{device_info.name} - Memory Usage",
+            "Memory Usage",
             unit="%"
         )
 
