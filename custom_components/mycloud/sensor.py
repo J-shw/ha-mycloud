@@ -71,7 +71,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
 
     sensors_to_add = [
         MyCloudCPUSensor(coordinator, device, serial_number, device_name),
-        MyCloudMemorySensor(coordinator, device, serial_number, device_name)
+        MyCloudMemorySensor(coordinator, device, serial_number, device_name),
+        MyCloudTotalStorageSensor(coordinator, device, serial_number, device_name),
+        MyCloudUsedStorageSensor(coordinator, device, serial_number, device_name),
+        MyCloudUnusedStorageSensor(coordinator, device, serial_number, device_name)
     ]
 
     disks = coordinator.data["system_info"]["disks"]
@@ -159,7 +162,61 @@ class MyCloudMemorySensor(MyCloudSensorBase):
         if total > 0:
             return round((used / total) * 100, 2)
         return None
+    
+class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:database"
+    _attr_unit_of_measurement = "TB"
 
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_total_storage"
+        self._attr_name = f"{device_name} Total Storage"
+
+    @property
+    def state(self):
+        size_data = self.coordinator.data["system_info"]["size"]
+        total_bytes = size_data["total"]
+        return round(total_bytes / (1024**4), 2)
+
+class MyCloudUsedStorageSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:database-minus"
+    _attr_unit_of_measurement = "TB"
+
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_used_storage"
+        self._attr_name = f"{device_name} Used Storage"
+
+    @property
+    def state(self):
+        size_data = self.coordinator.data["system_info"]["size"]
+        used_bytes = size_data["used"]
+        return round(used_bytes / (1024**4), 2)
+
+class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:database-plus"
+    _attr_unit_of_measurement = "TB"
+
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_unused_storage"
+        self._attr_name = f"{device_name} Unused Storage"
+
+    @property
+    def state(self):
+        size_data = self.coordinator.data["system_info"]["size"]
+        unused_bytes = size_data["unused"]
+        return round(unused_bytes / (1024**4), 2)
+    
 class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = UnitOfTemperature.CELSIUS
