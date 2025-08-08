@@ -135,7 +135,7 @@ class MyCloudSensorBase(CoordinatorEntity, SensorEntity):
         self._attr_device_info = device_info
         self._attr_unique_id = f"{serial_number}_{key}"
         self._attr_name = f"{device_name} {name}"
-        self._attr_unit_of_measurement = unit
+        self._attr_native_unit_of_measurement = unit
         self._attr_device_class = device_class
         self._attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -184,7 +184,7 @@ class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:database"
-    _attr_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = "TB"
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -202,7 +202,7 @@ class MyCloudUsedStorageSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:database-minus"
-    _attr_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = "TB"
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -220,7 +220,7 @@ class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:database-plus"
-    _attr_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = "TB"
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -238,7 +238,7 @@ class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
 
 class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:thermometer"
 
@@ -268,7 +268,7 @@ class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{serial_number}_disk_size"
         self._attr_name = f"{disk_name} Size"
         self._disk_name = disk['name']
-        self._attr_unit_of_measurement = "TB" # Not sure what Enum to use for this...
+        self._attr_native_unit_of_measurement = "TB" # Not sure what Enum to use for this...
 
     @property
     def state(self):
@@ -354,7 +354,7 @@ class MyCloudVolumeSizeSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:harddisk"
-    _attr_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = "TB"
 
     def __init__(self, coordinator, device_info, volume_name, volume):
         super().__init__(coordinator)
