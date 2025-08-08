@@ -1,4 +1,4 @@
-# <img src="images/logo.png" alt="WD My Cloud App Icon" width="150"> ha-mycloud
+# <img src="images/icon.png" alt="WD My Cloud App Icon" width="150"> ha-mycloud
 
 Home Assistant integration for Western Digital My Cloud NAS devices.
 
