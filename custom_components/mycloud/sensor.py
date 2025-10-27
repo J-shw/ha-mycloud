@@ -15,31 +15,54 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = timedelta(seconds=600)
-
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities):
     """Set up the WD My Cloud sensor platform."""
     host = config_entry.data["Host"]
     username = config_entry.data["Username"]
     password = config_entry.data["Password"]
+    version = config_entry.data["Version"]
 
-    client = nas_client(username, password, host)
+    client = nas_client(username, password, host, version)
     
     await client.__aenter__()
 
+    update_interval_seconds = config_entry.options.get("update_interval", 600)
+    SCAN_INTERVAL = timedelta(seconds=update_interval_seconds)
+    _LOGGER.debug("Update interval set to %s seconds", update_interval_seconds)
+
+
     async def async_update_data():
-        """Fetch data from the device."""
-        try:
-            data = {
+        """Fetch data from the device and re-authenticate if session expires."""
+
+        async def _fetch_data_from_api():
+            """Helper function to fetch all data points from the API."""
+            return {
                 "system_info": await client.system_info(),
                 "system_status": await client.system_status(),
                 "device_info": await client.device_info(),
                 "system_version": await client.system_version(),
             }
-            return data
+
+        try:
+            return await _fetch_data_from_api()
+        
         except Exception as err:
-            _LOGGER.error("Error fetching data: %s", err)
-            raise UpdateFailed(f"Error fetching data: {err}")
+            if "403" in str(err):
+                _LOGGER.warning("Session expired (403 error). Attempting to re-authenticate.")
+                
+                try:
+                    await client.__aenter__()
+                    
+                    _LOGGER.debug("Re-authentication successful. Retrying data fetch.")
+                    return await _fetch_data_from_api()
+
+                except Exception as retry_err:
+                    _LOGGER.error("Failed to fetch data after re-authentication: %s", retry_err)
+                    raise UpdateFailed(f"Failed to fetch data after re-auth: {retry_err}")
+            
+            else:
+                _LOGGER.error("Error fetching data: %s", err)
+                raise UpdateFailed(f"Error fetching data: {err}")
 
     coordinator = DataUpdateCoordinator(
         hass,
