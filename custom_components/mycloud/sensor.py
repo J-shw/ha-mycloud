@@ -15,8 +15,6 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-SCAN_INTERVAL = timedelta(seconds=600)
-
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities):
     """Set up the WD My Cloud sensor platform."""
     host = config_entry.data["Host"]
@@ -27,6 +25,11 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     client = nas_client(username, password, host, version)
     
     await client.__aenter__()
+
+    update_interval_seconds = config_entry.options.get("update_interval", 600)
+    SCAN_INTERVAL = timedelta(seconds=update_interval_seconds)
+    _LOGGER.debug("Update interval set to %s seconds", update_interval_seconds)
+
 
     async def async_update_data():
         """Fetch data from the device."""
