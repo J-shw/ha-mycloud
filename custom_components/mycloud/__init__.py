@@ -19,7 +19,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[PASSWORD] = password
     hass.data.setdefault(DOMAIN, {})[VERSION] = version
 
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
 
     await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
     return True
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
+    
+    if unload_ok:
+        pass
+
+    return unload_ok
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry."""
+    await hass.config_entries.async_reload(entry.entry_id)
