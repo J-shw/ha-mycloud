@@ -32,7 +32,7 @@ Home Assistant integration for Western Digital My Cloud NAS devices.
 1.  Go to **Settings** > **Devices & Services**.
 2.  Click **Add Integration** and search for "**WD My Cloud**".
 3.  Enter your device's **IP address** or **hostname** (e.g., `192.168.1.10` or `wdmycloud`). Do **not** include `http://` or `https://`.
-4.  Enter your username and password (Account must be **Admin**).
+4.  Enter your username and password (Must be an **admin** account)
 5. Select NAS software version (Currently 2 or 5 are supported)
 
 ---
