@@ -25,3 +25,10 @@ Which version did you select during the integration setup?
 
 ### 4. Debug Logs
 This is the most important part. Please copy and paste the logs related to `ha-mycloud` here.
+
+**Logs:**
+'''
+
+[PASTE LOGS HERE]
+
+'''
