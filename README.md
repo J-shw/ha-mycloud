@@ -30,6 +30,10 @@ This integration is powered by the [wdnas-client](https:/Python/Projects/WDNAS-C
 ---
 
 ## Configuration
+
+> [!IMPORTANT]  
+> The Admin account can only be active in one place at a time (either the NAS Web UI or this integration).
+
 1.  Go to **Settings** > **Devices & Services**.
 2.  Click **Add Integration** and search for "**WD My Cloud**".
 3.  Enter your device's **IP address** or **hostname** (e.g., `192.168.1.10` or `wdmycloud`). Do **not** include `http://` or `https://`.
