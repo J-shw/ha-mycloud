@@ -206,8 +206,11 @@ class MyCloudMemorySensor(MyCloudSensorBase):
 class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:database"
     _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+
+    _attr_suggested_unit_of_measurement = UnitOfInformation.TERABYTES
+    _attr_icon = "mdi:database"
+    
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -216,15 +219,17 @@ class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{device_name} Total Storage"
 
     @property
-    def state(self):
+    def native_value(self):
         size_data = self.coordinator.data["system_info"]["size"]
         return int(size_data["total"])
 
 class MyCloudUsedStorageSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:database-minus"
     _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+
+    _attr_suggested_unit_of_measurement = UnitOfInformation.TERABYTES
+    _attr_icon = "mdi:database-minus"
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -233,15 +238,17 @@ class MyCloudUsedStorageSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{device_name} Used Storage"
 
     @property
-    def state(self):
+    def native_value(self):
         size_data = self.coordinator.data["system_info"]["size"]
         return int(size_data["used"])
 
 class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:database-plus"
     _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+
+    _attr_suggested_unit_of_measurement = UnitOfInformation.TERABYTES
+    _attr_icon = "mdi:database-plus"
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -250,7 +257,7 @@ class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{device_name} Unused Storage"
 
     @property
-    def state(self):
+    def native_value(self):
         size_data = self.coordinator.data["system_info"]["size"]
         return int(size_data["unused"])
 
@@ -283,8 +290,10 @@ class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
 class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:harddisk"
     _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+
+    _attr_suggested_unit_of_measurement = UnitOfInformation.TERABYTES
+    _attr_icon = "mdi:harddisk"
 
     def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
         super().__init__(coordinator)
@@ -374,21 +383,23 @@ class MyCloudDiskOverTempSensor(CoordinatorEntity, BinarySensorEntity):
 class MyCloudVolumeSizeSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:harddisk"
     _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+
+    _attr_suggested_unit_of_measurement = UnitOfInformation.TERABYTES
+    _attr_icon = "mdi:harddisk"
 
     def __init__(self, coordinator, device_info, volume_name, volume):
         super().__init__(coordinator)
         self._attr_device_info = device_info
-        self._attr_unique_id = f"{volume_name}_volume_size"
+        self._attr_unique_id = f"{volume['id']}_volume_size"
         self._attr_name = f"{volume_name} Size"
-        self._volume_name = volume['name']
+        self._volume_id = volume['id']
 
     @property
     def native_value(self):
         volumes = self.coordinator.data.get("system_info", {}).get("volumes", [])
         for volume in volumes:
-            if volume["name"] == self._volume_name:
+            if volume["id"] == self._volume_id:
                 try:
                     return int(volume["size"])
                 except (TypeError, ValueError):
