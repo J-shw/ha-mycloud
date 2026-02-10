@@ -292,7 +292,6 @@ class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        """Return the raw byte count. HA will scale this to TB in the UI."""
         disks = self.coordinator.data["system_info"]["disks"]
         for disk in disks:
             if disk["name"] == self._disk_name:
@@ -384,10 +383,13 @@ class MyCloudVolumeSizeSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        volumes = self.coordinator.data["system_info"]["volumes"]
+        volumes = self.coordinator.data.get("system_info", {}).get("volumes", [])
         for volume in volumes:
             if volume["name"] == self._volume_name:
-                return int(volume["size"])
+                try:
+                    return int(volume["size"])
+                except (TypeError, ValueError):
+                    return None
         return None
 
 class MyCloudVolumeMountedSensor(CoordinatorEntity, BinarySensorEntity):
