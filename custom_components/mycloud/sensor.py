@@ -4,7 +4,7 @@ from homeassistant.components.sensor import SensorEntity, SensorStateClass, Sens
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed, CoordinatorEntity
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import UnitOfTemperature, UnitOfInformation
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -204,10 +204,10 @@ class MyCloudMemorySensor(MyCloudSensorBase):
         return None
     
 class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
-    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:database"
-    _attr_native_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -218,14 +218,13 @@ class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
     @property
     def state(self):
         size_data = self.coordinator.data["system_info"]["size"]
-        total_bytes = size_data["total"]
-        return round(total_bytes / (1024**4), 2)
+        return int(size_data["total"])
 
 class MyCloudUsedStorageSensor(CoordinatorEntity, SensorEntity):
-    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:database-minus"
-    _attr_native_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -236,14 +235,13 @@ class MyCloudUsedStorageSensor(CoordinatorEntity, SensorEntity):
     @property
     def state(self):
         size_data = self.coordinator.data["system_info"]["size"]
-        used_bytes = size_data["used"]
-        return round(used_bytes / (1024**4), 2)
+        return int(size_data["used"])
 
 class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
-    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:database-plus"
-    _attr_native_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
 
     def __init__(self, coordinator, device_info, serial_number, device_name):
         super().__init__(coordinator)
@@ -254,8 +252,7 @@ class MyCloudUnusedStorageSensor(CoordinatorEntity, SensorEntity):
     @property
     def state(self):
         size_data = self.coordinator.data["system_info"]["size"]
-        unused_bytes = size_data["unused"]
-        return round(unused_bytes / (1024**4), 2)
+        return int(size_data["unused"])
 
 # -- Disks --
 
@@ -277,13 +274,14 @@ class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
         disks = self.coordinator.data["system_info"]["disks"]
         for disk in disks:
             if disk["name"] == self._disk_name:
-                return disk["temp"]
+                return int(disk["temp"])
         return None
 
 class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
-    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE 
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:harddisk"
+    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
 
     def __init__(self, coordinator, device_info, serial_number, disk_name, disk):
         super().__init__(coordinator)
@@ -291,16 +289,14 @@ class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{serial_number}_disk_size"
         self._attr_name = f"{disk_name} Size"
         self._disk_name = disk['name']
-        self._attr_native_unit_of_measurement = "TB" # Not sure what Enum to use for this...
 
     @property
-    def state(self):
+    def native_value(self):
+        """Return the raw byte count. HA will scale this to TB in the UI."""
         disks = self.coordinator.data["system_info"]["disks"]
         for disk in disks:
             if disk["name"] == self._disk_name:
-                size_bytes = disk["size"]
-                size_tb = size_bytes / (1024**4)
-                return round(size_tb, 2)
+                return int(disk["size"])
         return None
     
 class MyCloudDiskHealthySensor(CoordinatorEntity, BinarySensorEntity):
@@ -374,10 +370,10 @@ class MyCloudDiskOverTempSensor(CoordinatorEntity, BinarySensorEntity):
 # -- Volumes --
 
 class MyCloudVolumeSizeSensor(CoordinatorEntity, SensorEntity):
-    _attr_device_class = SensorDeviceClass.VOLUME_STORAGE
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:harddisk"
-    _attr_native_unit_of_measurement = "TB"
+    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
 
     def __init__(self, coordinator, device_info, volume_name, volume):
         super().__init__(coordinator)
@@ -387,13 +383,11 @@ class MyCloudVolumeSizeSensor(CoordinatorEntity, SensorEntity):
         self._volume_name = volume['name']
 
     @property
-    def state(self):
+    def native_value(self):
         volumes = self.coordinator.data["system_info"]["volumes"]
         for volume in volumes:
             if volume["name"] == self._volume_name:
-                size_bytes = volume["size"]
-                size_tb = size_bytes / (1024**4)
-                return round(size_tb, 2)
+                return int(volume["size"])
         return None
 
 class MyCloudVolumeMountedSensor(CoordinatorEntity, BinarySensorEntity):
