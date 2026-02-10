@@ -270,11 +270,14 @@ class MyCloudDiskTempSensor(CoordinatorEntity, SensorEntity):
         self._disk_name = disk['name']
 
     @property
-    def state(self):
-        disks = self.coordinator.data["system_info"]["disks"]
+    def native_value(self):
+        disks = self.coordinator.data.get("system_info", {}).get("disks", [])
         for disk in disks:
             if disk["name"] == self._disk_name:
-                return int(disk["temp"])
+                try:
+                    return float(disk["temp"])
+                except (TypeError, ValueError):
+                    return None
         return None
 
 class MyCloudDiskSizeSensor(CoordinatorEntity, SensorEntity):
