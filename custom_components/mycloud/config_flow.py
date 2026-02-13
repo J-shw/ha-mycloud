@@ -5,11 +5,7 @@ from .const import DOMAIN
 
 class MyCloudOptionsFlowHandler(config_entries.OptionsFlow):
 
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input=None):
-        """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
@@ -33,7 +29,7 @@ class MyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return MyCloudOptionsFlowHandler(config_entry)
+        return MyCloudOptionsFlowHandler()
 
     async def async_step_user(self, user_input=None):
         if user_input is not None:
@@ -45,8 +41,4 @@ class MyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required("Password"): str,
             vol.Required("Version"): vol.In([2, 5])
         })
-        return self.async_show_form(
-            step_id="user",
-            data_schema=schema,
-            errors={}
-        )
+        return self.async_show_form(step_id="user", data_schema=schema)
