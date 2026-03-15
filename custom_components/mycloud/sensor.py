@@ -48,8 +48,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
         
         except Exception as err:
             if "403" in str(err):
-                _LOGGER.warning("Session expired (403 error). Attempting to re-authenticate.")
-                
                 try:
                     await client.__aenter__()
                     
