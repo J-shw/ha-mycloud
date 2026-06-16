@@ -39,6 +39,6 @@ class MyCloudConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required("Host"): str,
             vol.Required("Username"): str,
             vol.Required("Password"): str,
-            vol.Required("Version"): vol.In([2, 5])
+            vol.Required("Version"): vol.All(vol.Coerce(int), vol.In([2, 5]))
         })
         return self.async_show_form(step_id="user", data_schema=schema)
