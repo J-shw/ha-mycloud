@@ -4,7 +4,7 @@
 
 Home Assistant integration for Western Digital My Cloud NAS devices.
 
-This integration is powered by the [wdnas-client](https:/Python/Projects/WDNAS-Client) Python library, which handles all communication with the NAS.
+This integration is powered by the [wdnas-client](https://github.com/J-shw/wdnas_client) Python library, which handles all communication with the NAS.
 
 ---
 
