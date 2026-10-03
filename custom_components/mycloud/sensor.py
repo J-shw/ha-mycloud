@@ -26,6 +26,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     
     await client.__aenter__()
 
+    async def _async_close_client() -> None:
+        """Close the client's aiohttp session when the entry is unloaded."""
+        await client.__aexit__(None, None, None)
+
+    config_entry.async_on_unload(_async_close_client)
+
     update_interval_seconds = config_entry.options.get("update_interval", 600)
     SCAN_INTERVAL = timedelta(seconds=update_interval_seconds)
     _LOGGER.debug("Update interval set to %s seconds", update_interval_seconds)
@@ -49,6 +55,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
         except Exception as err:
             if "403" in str(err):
                 try:
+                    # Close the expired session first; __aenter__ creates a new
+                    # aiohttp.ClientSession and would otherwise leak the old one.
+                    await client.__aexit__(None, None, None)
                     await client.__aenter__()
                     
                     _LOGGER.debug("Re-authentication successful. Retrying data fetch.")
@@ -140,7 +149,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
 
     async_add_entities(sensors_to_add, True)
 
-    hass.data[DOMAIN]["client_cleanup"] = client.__aexit__
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry):
