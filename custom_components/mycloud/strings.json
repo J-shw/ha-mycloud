@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to WD My Cloud",
+        "description": "Enter the local NAS address and administrator credentials.",
+        "data": {
+          "Host": "IP address or hostname",
+          "Username": "Username",
+          "Password": "Password",
+          "Version": "NAS software version"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate WD My Cloud",
+        "description": "Enter updated administrator credentials.",
+        "data": {
+          "Username": "Username",
+          "Password": "Password"
+        }
+      }
+    },
+    "error": {
+      "auth": "The username or password is incorrect.",
+      "auth_or_session": "The credentials were rejected or the administrator account already has an active session.",
+      "connection": "Unable to connect to the NAS.",
+      "invalid_host": "Enter a valid IP address or hostname without a URL or path.",
+      "logout_failed": "The verification session could not be safely released. Wait for the NAS session to expire before trying again.",
+      "timeout": "The NAS did not respond before the request timed out.",
+      "unsupported_firmware": "The NAS software or selected API version is unsupported.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This NAS is already configured.",
+      "reauth_successful": "Reauthentication was successful.",
+      "unique_id_mismatch": "The credentials belong to a different NAS."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling options",
+        "data": {
+          "update_interval": "Update interval in seconds",
+          "release_admin_session_after_polling": "Release admin session after polling"
+        }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "restart": {"name": "Restart"},
+      "shutdown": {"name": "Shutdown"}
+    }
+  }
+}

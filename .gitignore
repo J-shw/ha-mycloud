@@ -1,1 +1,7 @@
 .DS_Store
+__pycache__/
+.pytest_cache/
+output/
+custom_components/mycloud/*_TEST_BUILD.txt
+docs/research/v4/Main/
+docs/research/v4/login/
