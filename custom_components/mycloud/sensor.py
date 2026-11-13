@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.entity import DeviceInfo
@@ -40,6 +40,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     async def async_update_data():
         """Fetch data from the device and re-authenticate if session expires."""
 
+        async def _fetch_alerts():
+            """Fetch the NAS alert log; optional, so a failure only makes the alert sensors unavailable."""
+            try:
+                _count, alerts = await client.alerts()
+                return alerts
+            except Exception as err:
+                _LOGGER.debug("Could not fetch alerts: %s", err)
+                return None
+
         async def _fetch_data_from_api():
             """Helper function to fetch all data points from the API."""
             return {
@@ -47,6 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
                 "system_status": await client.system_status(),
                 "device_info": await client.device_info(),
                 "system_version": await client.system_version(),
+                "alerts": await _fetch_alerts(),
             }
 
         try:
@@ -99,7 +109,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
         MyCloudMemorySensor(coordinator, device, serial_number, device_name),
         MyCloudTotalStorageSensor(coordinator, device, serial_number, device_name),
         MyCloudUsedStorageSensor(coordinator, device, serial_number, device_name),
-        MyCloudUnusedStorageSensor(coordinator, device, serial_number, device_name)
+        MyCloudUnusedStorageSensor(coordinator, device, serial_number, device_name),
+        MyCloudAlertCountSensor(coordinator, device, serial_number, device_name),
+        MyCloudLatestAlertSensor(coordinator, device, serial_number, device_name)
     ]
 
     disks = coordinator.data["system_info"]["disks"]
@@ -209,6 +221,72 @@ class MyCloudMemorySensor(MyCloudSensorBase):
             return round((used / total) * 100, 2)
         return None
     
+def _alert_time(alert):
+    """Parse an alert's NAS-local time, e.g. 'Fri, Nov 13, 2026 11:55:36 AM'."""
+    try:
+        return datetime.strptime(alert.get("time", ""), "%a, %b %d, %Y %I:%M:%S %p")
+    except (ValueError, TypeError):
+        return None
+
+def _latest_alert(alerts):
+    """Return the newest alert; falls back to the first entry if no time can be parsed."""
+    if not alerts:
+        return None
+    dated = [(parsed, alert) for alert in alerts if (parsed := _alert_time(alert))]
+    if dated:
+        return max(dated, key=lambda item: item[0])[1]
+    return alerts[0]
+
+class MyCloudAlertCountSensor(MyCloudSensorBase):
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(
+            coordinator,
+            device_info,
+            serial_number,
+            device_name,
+            "alert_count",
+            "Alert Count"
+        )
+        self._attr_icon = "mdi:bell-badge-outline"
+
+    @property
+    def available(self):
+        return super().available and self.coordinator.data.get("alerts") is not None
+
+    @property
+    def state(self):
+        return len(self.coordinator.data["alerts"])
+
+class MyCloudLatestAlertSensor(CoordinatorEntity, SensorEntity):
+    _attr_icon = "mdi:bell-alert-outline"
+
+    def __init__(self, coordinator, device_info, serial_number, device_name):
+        super().__init__(coordinator)
+        self._attr_device_info = device_info
+        self._attr_unique_id = f"{serial_number}_latest_alert"
+        self._attr_name = f"{device_name} Latest Alert"
+
+    @property
+    def available(self):
+        return super().available and self.coordinator.data.get("alerts") is not None
+
+    @property
+    def native_value(self):
+        alert = _latest_alert(self.coordinator.data["alerts"])
+        return alert.get("msg") if alert else "None"
+
+    @property
+    def extra_state_attributes(self):
+        alert = _latest_alert(self.coordinator.data["alerts"])
+        if not alert:
+            return {}
+        return {
+            "code": alert.get("code"),
+            "level": alert.get("level"),
+            "description": alert.get("desc"),
+            "time": alert.get("time"),
+        }
+
 class MyCloudTotalStorageSensor(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DATA_SIZE
     _attr_state_class = SensorStateClass.MEASUREMENT
