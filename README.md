@@ -69,6 +69,8 @@ This integration provides the following entities. `[disk_name]` and `[volume_nam
 * **Total Storage**: `sensor.wd_my_cloud_total_storage`
 * **Used Storage**: `sensor.wd_my_cloud_used_storage`
 * **Unused Storage**: `sensor.wd_my_cloud_unused_storage`
+* **Alert Count**: `sensor.wd_my_cloud_alert_count` (number of entries in the NAS alert log)
+* **Latest Alert**: `sensor.wd_my_cloud_latest_alert` (newest alert message; the code, level, description and time are attributes)
 * **Disk Temperature**: `sensor.wd_my_cloud_disk_[disk_name]_temperature`
 * **Disk Size**: `sensor.wd_my_cloud_disk_[disk_name]_size`
 * **Volume Size**: `sensor.wd_my_cloud_volume_[volume_name]_size`
